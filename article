@@ -1,0 +1,44 @@
+import requests
+from bs4 import BeautifulSoup
+import pymysql
+
+
+response=requests.get('https://meiriyiwen.com/random')
+#print(response.content)
+bs=BeautifulSoup(response.content,'lxml')
+title=bs.select('h1')
+title=title[0].text #标题
+#print(title[0].text)
+author=bs.select('.article_author')
+author=author[0].text #作者
+#print(author)
+content=bs.select(".article_text")
+content=str(content[0]) #内容
+#print(content[0])
+
+db=pymysql.connect(host='localhost',user='root',password='root',db='python',charset='utf8')
+query_sql='select * from article where title=%s'
+sql='insert into article (title,author,content) values (%s, %s, %s)'
+cursor=db.cursor()
+
+try:
+
+    query_value=(title)
+    cursor.execute(query_sql,query_value)
+    results=cursor.fetchall()
+    if len(results) == 0:
+        value=(title,author,content)
+        cursor.execute(sql,value)
+        db.commit()
+        print("------------《%s》 已插入  ------------- " % title)
+    else:
+        print("------------《%s》 已经存在------------- " % title)
+        
+
+except BaseException as e:
+    db.rollback()
+    print(e)
+
+finally:
+    cursor.close()
+    db.close()
